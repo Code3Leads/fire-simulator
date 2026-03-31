@@ -77,6 +77,8 @@ let canClick = true;
 let scenarioType = "";
 let score = 0;
 let highScore = localStorage.getItem("highScore") || 0;
+
+// 🔥 SIMULATION STATE
 let fireLevel = 1;
 let floorStability = 100;
 
@@ -94,6 +96,10 @@ function startGame() {
     bedroom: "Bedroom fire, occupant possibly trapped",
     garage: "Garage fire extending to house"
   };
+
+  // RESET STATE
+  fireLevel = 1;
+  floorStability = 100;
 
   document.getElementById("scenario").innerText =
     scenarioText[scenarioType] + ". What do you do?";
@@ -215,21 +221,27 @@ function nextStage() {
   }
 
   if (currentStage === 2) {
-    document.getElementById("scenario").innerText = "Fire located. What now?";
+    document.getElementById("scenario").innerText =
+      "Fire located. What now?";
   }
 
   if (currentStage === 3) {
+
     let conditionText = "";
+
     if (fireLevel >= 2) {
-      conditionText += "🔥 Fire intensifying.";
+      conditionText += "🔥 Fire intensifying. ";
     }
-    if (floorStability <50) {
-      conditionText += "⚠️ Floor weakening.";
+
+    if (floorStability <= 50) {
+      conditionText += "⚠️ Floor weakening. ";
     }
-    if conditionText === "") {
-      conditionText = "Conditions improving.";
+
+    if (conditionText === "") {
+      conditionText = "Conditions improving. ";
     }
-    document.getElementById("scenario"),innerText =
+
+    document.getElementById("scenario").innerText =
       conditionText + "What's your move?";
   }
 
@@ -238,7 +250,7 @@ function nextStage() {
   document.getElementById("result").innerText = "";
 }
 
-// CHOICE
+// CHOICE (🔥 SIMULATION LOGIC)
 function makeChoice(choice) {
   if (!gameActive || !canClick) return;
 
@@ -251,67 +263,87 @@ function makeChoice(choice) {
 
   let message = "";
 
-  //🚒 STAGE 1
+  // 🚒 STAGE 1
   if (currentStage === 1) {
+
     if (choice === "sizeup") {
       message = "✅ Good size-up. You identified fire conditions.";
     }
+
     else if (choice === "vent") {
-      message = "⚠️ Vent before size-up - fire behavior worsens.";
+      message = "⚠️ Vent before size-up — fire behavior worsens.";
       fireLevel += 1;
       floorStability -= 10;
     }
+
     else {
-      message = "⚠️ Pushed in without size-up - risky.";
-      floorStability -=10;
+      message = "⚠️ Pushed in without size-up — risky.";
+      floorStability -= 10;
     }
+
   }
 
-  //🚒 STAGE 2
+  // 🚒 STAGE 2
   else if (currentStage === 2) {
+
     if (choice === "line") {
-      message = "💧 Water water applied. Fire is being controlled.";
+      message = "💧 Water applied. Fire is being controlled.";
       fireLevel = Math.max(1, fireLevel - 1);
     }
-    else if ("choice === "vent") {
-      message = "🔥 Vent before water - fire intesifies!";
+
+    else if (choice === "vent") {
+      message = "🔥 Vent before water — fire intensifies!";
       fireLevel += 1;
       floorStability -= 30;
+    }
+
+    else if (choice === "search") {
+      message = "⚠️ Searching without water — high risk.";
+      floorStability -= 20;
+    }
+
   }
-  else if (choice === "search") {
-    message = "⚠️ Searching without water - high risk.";
-    floorStability -= 20;
-  }
-}
-// 🚒 STAGE 3
+
+  // 🚒 STAGE 3
   else if (currentStage === 3) {
+
     let conditionMsg = "";
+
     if (fireLevel >= 2) {
-      conditionMsg += "🔥 Fire spreading rapidly.";
+      conditionMsg += "🔥 Fire spreading rapidly. ";
     }
+
     if (floorStability <= 50) {
-      conditionMsg += "⚠️ Floor feels unstable.";
+      conditionMsg += "⚠️ Floor feels unstable. ";
     }
-    // outcomes
+
     if (choice === "cool") {
       message = conditionMsg + "💧 Cooling applied. Conditions improving.";
     }
+
     else if (choice === "push") {
-      if (floorStability <=50) {
+
+      if (floorStability <= 50) {
         message = conditionMsg + "💥 Floor collapse! Crew in danger!";
       } else {
-        message = conditionMsg + "🔥 Aggressive push - fire knocked.";
+        message = conditionMsg + "🔥 Aggressive push — fire knocked.";
       }
+
     }
+
     else if (choice === "backout") {
       message = conditionMsg + "🚒 You backed out and went defensive.";
     }
+
     document.getElementById("result").innerText = message;
     gameActive = false;
     return;
   }
+
   document.getElementById("result").innerText = message;
+
   setTimeout(nextStage, 1500);
+}
 
 // END
 function finishScenario() {
