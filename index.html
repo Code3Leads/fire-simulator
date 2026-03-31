@@ -48,8 +48,6 @@ button {
 
 <div class="box">
 
-<p id="score">Score: 0</p>
-<p id="highScore">High Score: 0</p>
 <p id="timer">Time: 10</p>
 <p id="scenario">Ready to Start?</p>
 
@@ -59,87 +57,34 @@ button {
 
 <p id="result"></p>
 
-<button onclick="restartGame()" id="restartBtn" style="display:none;">Play Again</button>
+<button onclick="restartGame()" id="restartBtn" style="display:none;">Restart Scenario</button>
 
 </div>
-
-<!-- AUDIO -->
-<audio id="fireSound" loop src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6b8a6fbe94.mp3?filename=fire-burning-ambient-110393.mp3"></audio>
-<audio id="alarmSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6d9c5bb0c4.mp3?filename=alarm-2-100645.mp3"></audio>
-<audio id="clickSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_8b8c8c8c8c.mp3?filename=click-124467.mp3"></audio>
 
 <script>
 let timeLeft = 10;
 let timer = null;
-let currentStage = 1;
 let gameActive = false;
 let canClick = true;
-let scenarioType = "";
-let score = 0;
-let highScore = localStorage.getItem("highScore") || 0;
 
 // 🔥 SIMULATION STATE
 let fireLevel = 1;
 let floorStability = 100;
 
-// Load high score
-document.getElementById("highScore").innerText = "High Score: " + highScore;
-
 // START GAME
 function startGame() {
-  const scenarios = ["kitchen", "basement", "bedroom", "garage"];
-  scenarioType = scenarios[Math.floor(Math.random() * scenarios.length)];
 
-  const scenarioText = {
-    kitchen: "Kitchen fire, smoke showing",
-    basement: "Basement fire, heavy smoke",
-    bedroom: "Bedroom fire, occupant possibly trapped",
-    garage: "Garage fire extending to house"
-  };
-
-  // RESET STATE
   fireLevel = 1;
   floorStability = 100;
-
-  document.getElementById("scenario").innerText =
-    scenarioText[scenarioType] + ". What do you do?";
 
   document.getElementById("startBtn").style.display = "none";
   document.getElementById("choices").style.display = "block";
 
-  score = 0;
-  updateScore();
-  updateHighScore();
-
-  currentStage = 1;
   gameActive = true;
   canClick = true;
 
-  playSounds();
-
-  updateChoices(1);
-  resetTimer();
+  nextStage();
 }
-
-// SOUND HANDLER
-function playSounds() {
-  let fire = document.getElementById("fireSound");
-  let alarm = document.getElementById("alarmSound");
-
-  fire.volume = 0.4;
-  alarm.volume = 0.6;
-
-  fire.currentTime = 0;
-  alarm.currentTime = 0;
-
-  fire.play().catch(() => {});
-  alarm.play().catch(() => {});
-}
-
-// enable sound if blocked
-document.body.addEventListener("click", () => {
-  playSounds();
-}, { once: true });
 
 // TIMER
 function startTimer() {
@@ -155,7 +100,7 @@ function startTimer() {
 
     if (timeLeft <= 0) {
       clearInterval(timer);
-      endGame("⛔ Too slow!");
+      endGame("⛔ You hesitated too long.");
     }
   }, 1000);
 }
@@ -168,206 +113,116 @@ function resetTimer() {
   startTimer();
 }
 
-// SCORE
-function updateScore() {
-  document.getElementById("score").innerText = "Score: " + score;
-}
-
-function updateHighScore() {
-  if (score > highScore) {
-    highScore = score;
-    localStorage.setItem("highScore", highScore);
-  }
-  document.getElementById("highScore").innerText = "High Score: " + highScore;
-}
-
-// BUTTONS
-function updateChoices(stage) {
-  const div = document.getElementById("choices");
-
-  if (stage === 1) {
-    div.innerHTML = `
-      <button onclick="makeChoice('sizeup')">360 Size-Up</button>
-      <button onclick="makeChoice('attack')">Interior Attack</button>
-      <button onclick="makeChoice('vent')">Vent Roof</button>
-    `;
-  }
-
-  else if (stage === 2) {
-    div.innerHTML = `
-      <button onclick="makeChoice('line')">Stretch Line</button>
-      <button onclick="makeChoice('search')">Primary Search</button>
-      <button onclick="makeChoice('vent')">Vent Roof</button>
-    `;
-  }
-
-  else if (stage === 3) {
-    div.innerHTML = `
-      <button onclick="makeChoice('cool')">Cool Overhead</button>
-      <button onclick="makeChoice('push')">Push Interior</button>
-      <button onclick="makeChoice('backout')">Back Out</button>
-    `;
-  }
-}
-
-// NEXT STAGE
+// MAIN LOOP
 function nextStage() {
-  currentStage++;
   canClick = true;
 
-  if (currentStage > 3) {
-    finishScenario();
-    return;
+  let text = "";
+
+  if (fireLevel >= 3) {
+    text += "🔥 Heavy fire conditions. ";
+  } else if (fireLevel === 2) {
+    text += "🔥 Fire intensifying. ";
+  } else {
+    text += "🔥 Fire showing. ";
   }
 
-  if (currentStage === 2) {
-    document.getElementById("scenario").innerText =
-      "Fire located. What now?";
+  if (floorStability <= 50) {
+    text += "⚠️ Floor weakening. ";
   }
 
-  if (currentStage === 3) {
-
-    let conditionText = "";
-
-    if (fireLevel >= 2) {
-      conditionText += "🔥 Fire intensifying. ";
-    }
-
-    if (floorStability <= 50) {
-      conditionText += "⚠️ Floor weakening. ";
-    }
-
-    if (conditionText === "") {
-      conditionText = "Conditions improving. ";
-    }
-
-    document.getElementById("scenario").innerText =
-      conditionText + "What's your move?";
+  if (floorStability <= 20) {
+    text += "💥 Floor near collapse! ";
   }
 
-  updateChoices(currentStage);
+  document.getElementById("scenario").innerText =
+    text + "What's your move?";
+
+  document.getElementById("choices").innerHTML = `
+    <button onclick="makeChoice('line')">Stretch Line</button>
+    <button onclick="makeChoice('search')">Primary Search</button>
+    <button onclick="makeChoice('vent')">Vent Roof</button>
+    <button onclick="makeChoice('cool')">Cool Overhead</button>
+    <button onclick="makeChoice('push')">Push Interior</button>
+    <button onclick="makeChoice('backout')">Back Out</button>
+  `;
+
   resetTimer();
   document.getElementById("result").innerText = "";
 }
 
-// CHOICE (🔥 SIMULATION LOGIC)
+// DECISIONS
 function makeChoice(choice) {
   if (!gameActive || !canClick) return;
-
-  let click = document.getElementById("clickSound");
-  click.currentTime = 0;
-  click.play().catch(() => {});
 
   canClick = false;
   clearInterval(timer);
 
   let message = "";
 
-  // 🚒 STAGE 1
-  if (currentStage === 1) {
-
-    if (choice === "sizeup") {
-      message = "✅ Good size-up. You identified fire conditions.";
-    }
-
-    else if (choice === "vent") {
-      message = "⚠️ Vent before size-up — fire behavior worsens.";
-      fireLevel += 1;
-      floorStability -= 10;
-    }
-
-    else {
-      message = "⚠️ Pushed in without size-up — risky.";
-      floorStability -= 10;
-    }
-
+  if (choice === "line") {
+    message = "💧 Water applied. Fire knocked down.";
+    fireLevel = Math.max(1, fireLevel - 1);
   }
 
-  // 🚒 STAGE 2
-  else if (currentStage === 2) {
-
-    if (choice === "line") {
-      message = "💧 Water applied. Fire is being controlled.";
-      fireLevel = Math.max(1, fireLevel - 1);
-    }
-
-    else if (choice === "vent") {
-      message = "🔥 Vent before water — fire intensifies!";
-      fireLevel += 1;
-      floorStability -= 30;
-    }
-
-    else if (choice === "search") {
-      message = "⚠️ Searching without water — high risk.";
-      floorStability -= 20;
-    }
-
+  else if (choice === "vent") {
+    message = "🔥 Vent without coordination — fire intensifies!";
+    fireLevel += 1;
+    floorStability -= 20;
+    flashScreen();
   }
 
-  // 🚒 STAGE 3
-  else if (currentStage === 3) {
+  else if (choice === "search") {
+    message = "⚠️ Searching in active fire conditions.";
+    floorStability -= 10;
+  }
 
-    let conditionMsg = "";
+  else if (choice === "cool") {
+    message = "💧 Cooling overhead. Temps improving.";
+    fireLevel = Math.max(1, fireLevel - 1);
+  }
 
-    if (fireLevel >= 2) {
-      conditionMsg += "🔥 Fire spreading rapidly. ";
+  else if (choice === "push") {
+
+    if (floorStability <= 30) {
+      flashScreen();
+      return endGame("💥 FLOOR COLLAPSE — MAYDAY!");
     }
 
-    if (floorStability <= 50) {
-      conditionMsg += "⚠️ Floor feels unstable. ";
-    }
+    message = "🔥 Aggressive push on fire.";
+  }
 
-    if (choice === "cool") {
-      message = conditionMsg + "💧 Cooling applied. Conditions improving.";
-    }
-
-    else if (choice === "push") {
-
-      if (floorStability <= 50) {
-        message = conditionMsg + "💥 Floor collapse! Crew in danger!";
-      } else {
-        message = conditionMsg + "🔥 Aggressive push — fire knocked.";
-      }
-
-    }
-
-    else if (choice === "backout") {
-      message = conditionMsg + "🚒 You backed out and went defensive.";
-    }
-
-    document.getElementById("result").innerText = message;
-    gameActive = false;
-    return;
+  else if (choice === "backout") {
+    return endGame("🚒 Defensive strategy — structure lost.");
   }
 
   document.getElementById("result").innerText = message;
 
+  // 🔥 Passive fire growth
+  fireLevel += 1;
+
   setTimeout(nextStage, 1500);
 }
 
-// END
-function finishScenario() {
-  gameActive = false;
-  updateHighScore();
-
-  let msg = score === 3
-    ? "🔥 Perfect run!"
-    : score === 2
-    ? "⚠️ Decent job"
-    : "❌ Fire lost";
-
-  document.getElementById("result").innerText = msg;
-  document.getElementById("restartBtn").style.display = "block";
+// VISUAL EFFECT
+function flashScreen() {
+  document.body.classList.add("flash");
+  setTimeout(() => document.body.classList.remove("flash"), 300);
 }
 
-function restartGame() {
-  location.reload();
-}
-
+// END GAME
 function endGame(msg) {
   gameActive = false;
+
+  document.getElementById("scenario").innerText = "SCENARIO COMPLETE";
   document.getElementById("result").innerText = msg;
+
   document.getElementById("restartBtn").style.display = "block";
+}
+
+// RESTART
+function restartGame() {
+  location.reload();
 }
 </script>
 
@@ -379,4 +234,4 @@ Baltimore County, Maryland 🇺🇸
 </p>
 
 </body>
-</html
+</html>
