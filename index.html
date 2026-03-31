@@ -71,8 +71,9 @@ let canClick = true;
 let fireLevel = 1;
 let floorStability = 100;
 let phase = "arrival";
+let position = "arrival";
 
-// 🔁 TRACK REPEATS
+// 🔁 REPEAT TRACKING
 let lastAction = "";
 let repeatCount = 0;
 
@@ -82,6 +83,7 @@ function startGame() {
   fireLevel = 1;
   floorStability = 100;
   phase = "arrival";
+  position = "arrival";
   lastAction = "";
   repeatCount = 0;
 
@@ -134,16 +136,17 @@ function nextStage() {
 
   canClick = true;
 
-  // 🔰 SIZE-UP PHASE
+  // 🔰 ARRIVAL → SIZE-UP
   if (phase === "arrival") {
 
     phase = "operations";
+    position = "exterior";
 
     document.getElementById("scenario").innerText =
-      "Command completes 360 — fire showing second floor Charlie side. What now?";
+      "Command completes 360 — fire on second floor Charlie/Delta corner. What now?";
 
     document.getElementById("choices").innerHTML = `
-      <button onclick="makeChoice('line')">Stretch Line</button>
+      <button onclick="makeChoice('line')">Charge Line & Stretch Interior</button>
       <button onclick="makeChoice('search')">Primary Search</button>
       <button onclick="makeChoice('vent')">Vent Roof</button>
     `;
@@ -153,36 +156,36 @@ function nextStage() {
     return;
   }
 
-  // 🔥 SIMULATION LOOP
+  // 🧱 POSITION-BASED SCENE
   let text = "";
 
-  if (fireLevel >= 5) {
-    text += "🔥 Heavy fire throughout structure. ";
-  }
-  else if (fireLevel >= 3) {
-    text += "🔥 Fire intensifying. ";
-  }
-  else {
-    text += "🔥 Fire showing. ";
+  if (position === "exterior") {
+    text = "Engine stretching line to the front door.";
   }
 
-  if (floorStability <= 50) {
-    text += "⚠️ Floor weakening. ";
+  else if (position === "interior") {
+    text = "Crew inside. Zero visibility, high heat. Advancing to stairs.";
   }
 
-  if (floorStability <= 20) {
-    text += "💥 Floor near collapse! ";
+  else if (position === "secondFloor") {
+    text = "Crew on second floor — fire visible in C/D corner.";
   }
 
-  document.getElementById("scenario").innerText =
-    text + "What's your move?";
+  // 🔥 CONDITIONS
+  if (fireLevel >= 4) text += " 🔥 Heavy fire.";
+  else if (fireLevel >= 2) text += " 🔥 Fire intensifying.";
+
+  if (floorStability <= 50) text += " ⚠️ Floor weakening.";
+  if (floorStability <= 20) text += " 💥 Floor near collapse!";
+
+  document.getElementById("scenario").innerText = text + " What now?";
 
   document.getElementById("choices").innerHTML = `
-    <button onclick="makeChoice('line')">Stretch Line</button>
-    <button onclick="makeChoice('search')">Primary Search</button>
-    <button onclick="makeChoice('vent')">Vent Roof</button>
+    <button onclick="makeChoice('line')">Advance Line</button>
     <button onclick="makeChoice('cool')">Cool Overhead</button>
-    <button onclick="makeChoice('push')">Push Interior</button>
+    <button onclick="makeChoice('push')">Push Fire Room</button>
+    <button onclick="makeChoice('vent')">Vent</button>
+    <button onclick="makeChoice('search')">Search</button>
     <button onclick="makeChoice('backout')">Back Out</button>
   `;
 
@@ -200,7 +203,7 @@ function makeChoice(choice) {
 
   let message = "";
 
-  // 🔁 TRACK REPEATS
+  // 🔁 REPEAT TRACKING
   if (choice === lastAction) {
     repeatCount++;
   } else {
@@ -225,36 +228,57 @@ function makeChoice(choice) {
   // 🔥 OPERATIONS
   else {
 
+    // 🔥 LINE = MOVEMENT + ATTACK
     if (choice === "line") {
-      message = "💧 Water applied. Fire darkening.";
-      fireLevel = Math.max(1, fireLevel - 1);
+
+      if (position === "exterior") {
+        position = "interior";
+        message = "🚒 Line stretched — making entry.";
+      }
+
+      else if (position === "interior") {
+        position = "secondFloor";
+        message = "🚒 Advancing upstairs toward fire.";
+      }
+
+      else {
+        message = "💧 Water applied to fire.";
+        fireLevel -= 1;
+      }
     }
 
     else if (choice === "vent") {
-      message = "🔥 Vent without coordination — fire intensifies!";
+      message = "🔥 Vent without coordination — fire spreading!";
       fireLevel += 1;
       floorStability -= 20;
       flashScreen();
     }
 
     else if (choice === "search") {
-      message = "⚠️ Searching in active fire conditions.";
+      message = "⚠️ Searching without protection — risky.";
       floorStability -= 10;
     }
 
     else if (choice === "cool") {
-      message = "💧 Cooling overhead. Temps improving.";
-      fireLevel = Math.max(1, fireLevel - 1);
+      message = "💧 Cooling overhead.";
+      fireLevel -= 1;
     }
 
     else if (choice === "push") {
 
-      if (floorStability <= 30) {
+      if (position !== "secondFloor") {
+        message = "⚠️ Not in position to push fire yet.";
+      }
+
+      else if (floorStability <= 30) {
         flashScreen();
         return endGame("💥 FLOOR COLLAPSE — MAYDAY!");
       }
 
-      message = "🔥 Aggressive push on fire.";
+      else {
+        message = "🔥 Pushing fire room.";
+        fireLevel -= 1;
+      }
     }
 
     else if (choice === "backout") {
@@ -268,8 +292,10 @@ function makeChoice(choice) {
       message += " ⚠️ Repeating ineffective action — conditions worsening.";
     }
 
-    // 🔥 FIRE ALWAYS GROWS
-    fireLevel += 1;
+    // 🔥 FIRE GROWS IF NOT CONTROLLED
+    if (choice !== "line" && choice !== "cool" && choice !== "push") {
+      fireLevel += 1;
+    }
 
     // 🔥 LOSS CONDITIONS
     if (fireLevel >= 6) {
@@ -280,8 +306,8 @@ function makeChoice(choice) {
       return endGame("💥 Structure collapse — catastrophic failure.");
     }
 
-    // 🔥 WIN CONDITION
-    if (fireLevel <= 1 && floorStability > 30) {
+    // 🔥 WIN
+    if (fireLevel <= 0 && floorStability > 30) {
       return endGame("🔥 Fire knocked — good stop.");
     }
   }
