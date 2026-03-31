@@ -72,12 +72,18 @@ let fireLevel = 1;
 let floorStability = 100;
 let phase = "arrival";
 
+// 🔁 TRACK REPEATS
+let lastAction = "";
+let repeatCount = 0;
+
 // START
 function startGame() {
 
   fireLevel = 1;
   floorStability = 100;
   phase = "arrival";
+  lastAction = "";
+  repeatCount = 0;
 
   document.getElementById("startBtn").style.display = "none";
   document.getElementById("choices").style.display = "block";
@@ -150,10 +156,10 @@ function nextStage() {
   // 🔥 SIMULATION LOOP
   let text = "";
 
-  if (fireLevel >= 4) {
-    text += "🔥 Heavy fire conditions. ";
+  if (fireLevel >= 5) {
+    text += "🔥 Heavy fire throughout structure. ";
   }
-  else if (fireLevel >= 2) {
+  else if (fireLevel >= 3) {
     text += "🔥 Fire intensifying. ";
   }
   else {
@@ -193,15 +199,22 @@ function makeChoice(choice) {
   clearInterval(timer);
 
   let message = "";
-  let endNow = false;
 
-  // ARRIVAL
+  // 🔁 TRACK REPEATS
+  if (choice === lastAction) {
+    repeatCount++;
+  } else {
+    repeatCount = 0;
+  }
+  lastAction = choice;
+
+  // 🚒 ARRIVAL
   if (phase === "arrival") {
 
     if (choice === "sizeup") {
       message = "✅ Good — performing a 360.";
-      setTimeout(nextStage, 1500);
       document.getElementById("result").innerText = message;
+      setTimeout(nextStage, 1500);
       return;
     } else {
       message = "⚠️ Acting before size-up — risky.";
@@ -214,7 +227,7 @@ function makeChoice(choice) {
 
     if (choice === "line") {
       message = "💧 Water applied. Fire darkening.";
-      fireLevel = Math.max(1, fireLevel - 0.5);
+      fireLevel = Math.max(1, fireLevel - 1);
     }
 
     else if (choice === "vent") {
@@ -231,7 +244,7 @@ function makeChoice(choice) {
 
     else if (choice === "cool") {
       message = "💧 Cooling overhead. Temps improving.";
-      fireLevel = Math.max(1, fireLevel - 0.5);
+      fireLevel = Math.max(1, fireLevel - 1);
     }
 
     else if (choice === "push") {
@@ -248,8 +261,24 @@ function makeChoice(choice) {
       return endGame("🚒 Defensive strategy — structure lost.");
     }
 
-    // 🔥 Fire continues to grow if not controlled
-    fireLevel += 0.5;
+    // 🔁 REPEAT PENALTY
+    if (repeatCount >= 2) {
+      fireLevel += 1;
+      floorStability -= 10;
+      message += " ⚠️ Repeating ineffective action — conditions worsening.";
+    }
+
+    // 🔥 FIRE ALWAYS GROWS
+    fireLevel += 1;
+
+    // 🔥 LOSS CONDITIONS
+    if (fireLevel >= 6) {
+      return endGame("🔥 Fire out of control — structure lost.");
+    }
+
+    if (floorStability <= 0) {
+      return endGame("💥 Structure collapse — catastrophic failure.");
+    }
 
     // 🔥 WIN CONDITION
     if (fireLevel <= 1 && floorStability > 30) {
