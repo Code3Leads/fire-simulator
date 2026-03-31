@@ -67,15 +67,17 @@ let timer = null;
 let gameActive = false;
 let canClick = true;
 
-// 🔥 SIMULATION STATE
+// 🔥 SIM STATE
 let fireLevel = 1;
 let floorStability = 100;
+let phase = "arrival";
 
-// START GAME
+// START
 function startGame() {
 
   fireLevel = 1;
   floorStability = 100;
+  phase = "arrival";
 
   document.getElementById("startBtn").style.display = "none";
   document.getElementById("choices").style.display = "block";
@@ -83,7 +85,15 @@ function startGame() {
   gameActive = true;
   canClick = true;
 
-  nextStage();
+  document.getElementById("scenario").innerText =
+    "🚒 Arrive on scene — smoke showing. What do you do?";
+
+  document.getElementById("choices").innerHTML = `
+    <button onclick="makeChoice('sizeup')">360 Size-Up</button>
+    <button onclick="makeChoice('attack')">Interior Attack</button>
+  `;
+
+  resetTimer();
 }
 
 // TIMER
@@ -115,15 +125,38 @@ function resetTimer() {
 
 // MAIN LOOP
 function nextStage() {
+
   canClick = true;
 
+  // 🔰 SIZE-UP PHASE
+  if (phase === "arrival") {
+
+    phase = "operations";
+
+    document.getElementById("scenario").innerText =
+      "Command completes 360 — fire showing second floor Charlie side. What now?";
+
+    document.getElementById("choices").innerHTML = `
+      <button onclick="makeChoice('line')">Stretch Line</button>
+      <button onclick="makeChoice('search')">Primary Search</button>
+      <button onclick="makeChoice('vent')">Vent Roof</button>
+    `;
+
+    resetTimer();
+    document.getElementById("result").innerText = "";
+    return;
+  }
+
+  // 🔥 SIMULATION LOOP
   let text = "";
 
-  if (fireLevel >= 3) {
+  if (fireLevel >= 4) {
     text += "🔥 Heavy fire conditions. ";
-  } else if (fireLevel === 2) {
+  }
+  else if (fireLevel >= 2) {
     text += "🔥 Fire intensifying. ";
-  } else {
+  }
+  else {
     text += "🔥 Fire showing. ";
   }
 
@@ -153,64 +186,89 @@ function nextStage() {
 
 // DECISIONS
 function makeChoice(choice) {
+
   if (!gameActive || !canClick) return;
 
   canClick = false;
   clearInterval(timer);
 
   let message = "";
+  let endNow = false;
 
-  if (choice === "line") {
-    message = "💧 Water applied. Fire knocked down.";
-    fireLevel = Math.max(1, fireLevel - 1);
+  // ARRIVAL
+  if (phase === "arrival") {
+
+    if (choice === "sizeup") {
+      message = "✅ Good — performing a 360.";
+      setTimeout(nextStage, 1500);
+      document.getElementById("result").innerText = message;
+      return;
+    } else {
+      message = "⚠️ Acting before size-up — risky.";
+      floorStability -= 10;
+    }
   }
 
-  else if (choice === "vent") {
-    message = "🔥 Vent without coordination — fire intensifies!";
-    fireLevel += 1;
-    floorStability -= 20;
-    flashScreen();
-  }
+  // 🔥 OPERATIONS
+  else {
 
-  else if (choice === "search") {
-    message = "⚠️ Searching in active fire conditions.";
-    floorStability -= 10;
-  }
-
-  else if (choice === "cool") {
-    message = "💧 Cooling overhead. Temps improving.";
-    fireLevel = Math.max(1, fireLevel - 1);
-  }
-
-  else if (choice === "push") {
-
-    if (floorStability <= 30) {
-      flashScreen();
-      return endGame("💥 FLOOR COLLAPSE — MAYDAY!");
+    if (choice === "line") {
+      message = "💧 Water applied. Fire darkening.";
+      fireLevel = Math.max(1, fireLevel - 0.5);
     }
 
-    message = "🔥 Aggressive push on fire.";
-  }
+    else if (choice === "vent") {
+      message = "🔥 Vent without coordination — fire intensifies!";
+      fireLevel += 1;
+      floorStability -= 20;
+      flashScreen();
+    }
 
-  else if (choice === "backout") {
-    return endGame("🚒 Defensive strategy — structure lost.");
+    else if (choice === "search") {
+      message = "⚠️ Searching in active fire conditions.";
+      floorStability -= 10;
+    }
+
+    else if (choice === "cool") {
+      message = "💧 Cooling overhead. Temps improving.";
+      fireLevel = Math.max(1, fireLevel - 0.5);
+    }
+
+    else if (choice === "push") {
+
+      if (floorStability <= 30) {
+        flashScreen();
+        return endGame("💥 FLOOR COLLAPSE — MAYDAY!");
+      }
+
+      message = "🔥 Aggressive push on fire.";
+    }
+
+    else if (choice === "backout") {
+      return endGame("🚒 Defensive strategy — structure lost.");
+    }
+
+    // 🔥 Fire continues to grow if not controlled
+    fireLevel += 0.5;
+
+    // 🔥 WIN CONDITION
+    if (fireLevel <= 1 && floorStability > 30) {
+      return endGame("🔥 Fire knocked — good stop.");
+    }
   }
 
   document.getElementById("result").innerText = message;
 
-  // 🔥 Passive fire growth
-  fireLevel += 1;
-
   setTimeout(nextStage, 1500);
 }
 
-// VISUAL EFFECT
+// VISUAL
 function flashScreen() {
   document.body.classList.add("flash");
   setTimeout(() => document.body.classList.remove("flash"), 300);
 }
 
-// END GAME
+// END
 function endGame(msg) {
   gameActive = false;
 
