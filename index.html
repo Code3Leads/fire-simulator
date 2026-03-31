@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fire Scene Simulator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+body {
+  font-family: Arial;
+  background: #020617;
+  color: white;
+  text-align: center;
+  padding: 40px 20px;
+  transition: background 0.3s;
+}
+
+.box {
+  max-width: 420px;
+  margin: auto;
+  background: #1f2937;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(255,0,0,0.2);
+}
+
+button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #e11d48;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.flash {
+  background: #7f1d1d !important;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🔥 Fire Scene Simulator</h1>
+<h2>What would YOU do?</h2>
+
+<div class="box">
+
+<p id="score">Score: 0</p>
+<p id="highScore">High Score: 0</p>
+<p id="timer">Time: 10</p>
+<p id="scenario">Ready to Start?</p>
+
+<button onclick="startGame()" id="startBtn">Start Scenario</button>
+
+<div id="choices" style="display:none;"></div>
+
+<p id="result"></p>
+
+<button onclick="restartGame()" id="restartBtn" style="display:none;">Play Again</button>
+
+</div>
+
+<!-- AUDIO -->
+<audio id="fireSound" loop src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6b8a6fbe94.mp3?filename=fire-burning-ambient-110393.mp3"></audio>
+<audio id="alarmSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_6d9c5bb0c4.mp3?filename=alarm-2-100645.mp3"></audio>
+<audio id="clickSound" src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_8b8c8c8c8c.mp3?filename=click-124467.mp3"></audio>
+
+<script>
+let timeLeft = 10;
+let timer = null;
+let currentStage = 1;
+let gameActive = false;
+let canClick = true;
+let scenarioType = "";
+let score = 0;
+let highScore = localStorage.getItem("highScore") || 0;
+
+// Load high score
+document.getElementById("highScore").innerText = "High Score: " + highScore;
+
+// START GAME
+function startGame() {
+  const scenarios = ["kitchen", "basement", "bedroom", "garage"];
+  scenarioType = scenarios[Math.floor(Math.random() * scenarios.length)];
+
+  const scenarioText = {
+    kitchen: "Kitchen fire, smoke showing",
+    basement: "Basement fire, heavy smoke",
+    bedroom: "Bedroom fire, occupant possibly trapped",
+    garage: "Garage fire extending to house"
+  };
+
+  document.getElementById("scenario").innerText =
+    scenarioText[scenarioType] + ". What do you do?";
+
+  document.getElementById("startBtn").style.display = "none";
+  document.getElementById("choices").style.display = "block";
+
+  score = 0;
+  updateScore();
+  updateHighScore();
+
+  currentStage = 1;
+  gameActive = true;
+  canClick = true;
+
+  playSounds();
+
+  updateChoices(1);
+  resetTimer();
+}
+
+// SOUND HANDLER
+function playSounds() {
+  let fire = document.getElementById("fireSound");
+  let alarm = document.getElementById("alarmSound");
+
+  fire.volume = 0.4;
+  alarm.volume = 0.6;
+
+  fire.currentTime = 0;
+  alarm.currentTime = 0;
+
+  fire.play().catch(() => {});
+  alarm.play().catch(() => {});
+}
+
+// enable sound if blocked
+document.body.addEventListener("click", () => {
+  playSounds();
+}, { once: true });
+
+// TIMER
+function startTimer() {
+  clearInterval(timer);
+
+  timer = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").innerText = "Time: " + timeLeft;
+
+    if (timeLeft <= 5) {
+      document.body.style.background = "#450a0a";
+    }
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      endGame("⛔ Too slow!");
+    }
+  }, 1000);
+}
+
+function resetTimer() {
+  clearInterval(timer);
+  timeLeft = 10;
+  document.body.style.background = "#020617";
+  document.getElementById("timer").innerText = "Time: 10";
+  startTimer();
+}
+
+// SCORE
+function updateScore() {
+  document.getElementById("score").innerText = "Score: " + score;
+}
+
+function updateHighScore() {
+  if (score > highScore) {
+    highScore = score;
+    localStorage.setItem("highScore", highScore);
+  }
+  document.getElementById("highScore").innerText = "High Score: " + highScore;
+}
+
+// BUTTONS
+function updateChoices(stage) {
+  const div = document.getElementById("choices");
+
+  if (stage === 1) {
+    div.innerHTML = `
+      <button onclick="makeChoice('sizeup')">360 Size-Up</button>
+      <button onclick="makeChoice('attack')">Interior Attack</button>
+      <button onclick="makeChoice('vent')">Vent Roof</button>
+    `;
+  }
+
+  else if (stage === 2) {
+    div.innerHTML = `
+      <button onclick="makeChoice('line')">Stretch Line</button>
+      <button onclick="makeChoice('search')">Primary Search</button>
+      <button onclick="makeChoice('vent')">Vent Roof</button>
+    `;
+  }
+
+  else if (stage === 3) {
+    div.innerHTML = `
+      <button onclick="makeChoice('cool')">Cool Overhead</button>
+      <button onclick="makeChoice('push')">Push Interior</button>
+      <button onclick="makeChoice('backout')">Back Out</button>
+    `;
+  }
+}
+
+// NEXT STAGE
+function nextStage() {
+  currentStage++;
+  canClick = true;
+
+  if (currentStage > 3) {
+    finishScenario();
+    return;
+  }
+
+  if (currentStage === 2) {
+    document.getElementById("scenario").innerText = "Fire located. What now?";
+  }
+
+  if (currentStage === 3) {
+    document.getElementById("scenario").innerText =
+      "High heat conditions. What's your move?";
+  }
+
+  updateChoices(currentStage);
+  resetTimer();
+  document.getElementById("result").innerText = "";
+}
+
+// CHOICE
+function makeChoice(choice) {
+  if (!gameActive || !canClick) return;
+
+  let click = document.getElementById("clickSound");
+  click.currentTime = 0;
+  click.play().catch(() => {});
+
+  canClick = false;
+  clearInterval(timer);
+
+  let correct = false;
+
+  if (currentStage === 1) correct = (choice === "sizeup");
+
+  if (currentStage === 2) {
+    if (scenarioType === "basement") correct = (choice === "line");
+    if (scenarioType === "bedroom") correct = (choice === "search");
+    if (scenarioType === "kitchen") correct = (choice === "line");
+    if (scenarioType === "garage") correct = (choice === "line");
+  }
+
+  if (currentStage === 3) correct = (choice === "cool");
+
+  if (correct) {
+    score++;
+    updateScore();
+    document.getElementById("result").innerText = "✅ Good decision.";
+  } else {
+    document.getElementById("result").innerText = "❌ Poor decision.";
+    document.body.classList.add("flash");
+    setTimeout(() => document.body.classList.remove("flash"), 300);
+  }
+
+  setTimeout(nextStage, 1500);
+}
+
+// END
+function finishScenario() {
+  gameActive = false;
+  updateHighScore();
+
+  let msg = score === 3
+    ? "🔥 Perfect run!"
+    : score === 2
+    ? "⚠️ Decent job"
+    : "❌ Fire lost";
+
+  document.getElementById("result").innerText = msg;
+  document.getElementById("restartBtn").style.display = "block";
+}
+
+function restartGame() {
+  location.reload();
+}
+
+function endGame(msg) {
+  gameActive = false;
+  document.getElementById("result").innerText = msg;
+  document.getElementById("restartBtn").style.display = "block";
+}
+</script>
+
+</body>
+</html
