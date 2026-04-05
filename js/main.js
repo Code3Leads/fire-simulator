@@ -67,6 +67,7 @@ function arriveOnScene() {
     setChoices([
       { text: "Nozzleman", action: "chooseRole('nozzle')" },
       { text: "Backup Firefighter", action: "chooseRole('backup')" }
+      {text: "Officer (Command)", action: "chooseRole('officer')}
     ]);
   }
 }
@@ -104,8 +105,10 @@ function chooseRole(role) {
 
   if (role === "nozzle") {
     showNozzleOptions();
-  } else {
+  } else if(role === "backup") {
     showBackupOptions();
+  } else {
+    showOfficerOptions();
   }
 }
 
@@ -125,6 +128,97 @@ function showBackupOptions() {
   ]);
 }
 
+function showOfficerOptions() {
+  setChoices([
+    { text: "Establish Command", action: "establichCommand()" },
+    { text: "Give Size-up", action: "giveSizeUp()" },
+    { text: "Activate RIT", action: "activateRIT()" },
+    { text: "Call PAR", action: "callPAR()" }
+    { text: "Evacuate Structure", action: "evacuate()" }
+  ]);
+}
+
+function establishCommand() {
+  startTimer(20);
+  updateScenario("🎖️ command established. You are in command.");
+  nextTurn();
+}
+
+function giveSizeUp() {
+  startTimer(20);
+  updateScenario(`Heavy ${state.arrival} from a ${state.buildingType}. Working fire.`);
+  nextTurn();
+}
+
+function activateRIT() {
+  startTimer(20);
+  state.ritActive = true;
+  updateScenario("🚒 RIT Team established.");
+  nextTurn();
+}
+
+function callPAR() {
+  startTimer(20);
+
+  if (state.mayday) {
+    updateScenario(" 🚨PAR NOT COMPLETE - firefighter missing!");
+  } else {
+    updateScenario("✅ All members accounted for.");
+  }
+  nextTurn();
+}
+
+function evacuate() {
+  startTimer(20);
+  updateScenario("🚨 Emergency evacuation ordered!");
+  nextTurn();
+}
+
+function triggerMayday() {
+  state.mayday = true;
+  updateScenario("🚨 MAYDAY MAYDAY MAYDAY🚨");
+  triggerDangerMode();
+
+  if (state.ritActive) {
+    deployRIT();
+  } else {
+    updateScenario("⚠️ No RIT team assigned! Rescue delayed!");
+  }
+
+  showLunarPrompt();
+}
+
+function deployRIT() {
+  updateScenario("🚒 RIT entering structure for rescue!");
+}
+
+function showLUNARPrompt() {
+  document.getElementById("choices").innerHTML =
+    <div style="margin-top:10px;">
+      <h3>MAYDAY - LUNAR</h3>
+      <input placeholder="Location"><br><br>
+      <input placeholder="Unit"><br><br>
+      <input placeholder="Name"><br><br>
+      <input placeholder="Assignment"><br><br>
+      <imput placeholder="Resources"><br><br>
+      <button onclick="submitLUNAR()">Transmit</button>
+    </div>
+   ;
+}
+
+function submitLUNAR () {
+  updateScenario("📻 LUNAR transmitted. RIT responding.");
+}
+
+function triggerDangerMode() {
+  startTimer(10); // faster timer 
+  document.body.style.backgroundColor = "#7f1d1d";
+
+  setTimeout(() => {
+    document.body.style.backgroundColor = "#020617";
+  }, 500);
+}
+  
 function advanceLine() {
   startTimer(20);
 
@@ -211,8 +305,10 @@ function nextTurn() {
 function checkConditions() {
   if (state.heatLevel >= 10 && !state.waterOnFire) {
     updateScenario("🔥 Flashover imminent!");
+    triggerDangerMode();
   }
-  if (state.fireIntensity >= 10) {
+  if (state.fireIntensity >= 12 && !state.mayday) {
     updateScenario("🔥 Fire rapidly intensifying!");
+    triggerMayday();
   }
 }
