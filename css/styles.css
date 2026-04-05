@@ -1,1 +1,32 @@
+body {
+  font-family: Arial;
+  background: #020617;
+  color: white;
+  text-align: center;
+  padding: 40px 20px;
+}
 
+.box {
+  max-width: 400px;
+  margin: auto;
+  background: #1f2937;
+  padding: 20px;
+  border-radius: 10px;
+}
+
+button {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: #e11d48;
+  color: white;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #be123c;
+}
