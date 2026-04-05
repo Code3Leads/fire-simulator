@@ -65,8 +65,8 @@ function arriveOnScene() {
   } else {
 
     setChoices([
-      { text: "Stretch Line", action: "placeholder()" },
-      { text: "Give Size-Up", action: "placeholder()" }
+      { text: "Nozzleman", action: "chooseRole('nozzle')" },
+      { text: "Backup Firefighter", action: "chooseRole('backup')" }
     ]);
   }
 }
@@ -94,9 +94,129 @@ function investigateInterior() {
   ]);
 }
 
-// placeholder
-function placeholder() {
+// Roles
+function chooseRole(role) {
   startTimer(20);
+
+  state.role = role;
+
+  updateScenario('You are assigned as ${role}.');
+
+  if (role === "nozzle") {
+    showNozzleOptions();
+  } else {
+    showBackupOptions();
+  }
+}
+
+function showNozzleOptions() {
+  setChoices([
+    {text: "Advance Line", action: "advanceLine()" },
+    {text: "Flow Water", action: "flowWater()"},
+    {text: "Cool Overhead", action: "coolOverhead()"}
+  ]);
+}
+
+function showBackupOptions() {
+  setChoices([
+    {text: "Force Door", action: "forceDoor()" },
+    {text: "Search", action: "search()" },
+    {text: "Assist Line", action: "assistLine()"}
+  ]);
+}
+
+function advanceLine() {
+  startTimer(20);
+
+  if(state.fireIntensity > 6) {
+    state.heatLevel += 2;
+    updateScenario("Heavy fire pushing back. Advancement difficult.");
+  } else {
+    state.fireIntensity -= 2;
+    state.waterOnFire = true;
+    updateScenario(" Good knockdown. Fire darkening.")
+  }
+
+  nextTurn();
+}
+
+function flowWater() {
+  startTimer(20);
+
+  state.waterOnFire = true;
+  state.fireIntensity -= 3;
+
+  updateScenario("Water applied. Fire conditions improving.");
+
+  nextTurn();
+}
+
+function coolOverhead() {
+  startTimer(20);
+
+  state.heatLevel -= 2;
+
+  updateSceanrio("Cooling overhead. Heat reduced.");
+
+  nextTurn();
+}
+
+function forceDoor() {
+  startTimer(20);
+
+  updateScenario ("Door forced. Entry gained.");
+
+  nextTurn():
+}
+
+function search() {
+  startTimer(20);
+
+  if (Math.random() < 0.5) {
+    updateSceanrio("🧑 Victim found!");
+  } else {
+    updateScenario("No victim found. Continue search.");
+  }
+
+  nextTurn();
+}
+
+function assistLine() {
+  startTimer(20);
+
+  state.fireIntensity -= 1;
+
+  updateScenario("Backing up nozzle. Fire attack improving.");
+
+  nextTurn();
+}
+
+function nextTurn() {
+  state.timeElapsed++;
+
+  // Fire grows over time
+  state.fireIntensity += 1;
+  state.heatLevel += 1;
+
+  checkConditions();
+
+  // Return correct role options
+  if (state.role === "nozzle") {
+    showNozzleOptions();
+  } else {
+    showBackupOptions();
+  }
+}
+
+function checkConditions() {
+  if (state.heatLevel >= 10 && !state.waterOnFire) {
+    updateScenario("🔥 Flashover imminent!");
+  }
+  if (state.fireIntensity >= 10) {
+    updateScenario("🔥 Fire rapidly intensifying!");
+  }
+}
+
 
   updateScenario("Next phase coming soon...");
 }
