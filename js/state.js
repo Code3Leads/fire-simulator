@@ -14,3 +14,9 @@ let state = {
 
   timeElapsed: 0
 };
+
+// add to you state object
+state.role = "";
+state.ritActive = false;
+state.mayday = false;
+state.parStatus = "accounted";
