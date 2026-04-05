@@ -100,7 +100,7 @@ function chooseRole(role) {
 
   state.role = role;
 
-  updateScenario('You are assigned as ${role}.');
+  updateScenario(`You are assigned as ${role}.`);
 
   if (role === "nozzle") {
     showNozzleOptions();
@@ -156,7 +156,7 @@ function coolOverhead() {
 
   state.heatLevel -= 2;
 
-  updateSceanrio("Cooling overhead. Heat reduced.");
+  updateScenario("Cooling overhead. Heat reduced.");
 
   nextTurn();
 }
@@ -166,14 +166,14 @@ function forceDoor() {
 
   updateScenario ("Door forced. Entry gained.");
 
-  nextTurn():
+  nextTurn();
 }
 
 function search() {
   startTimer(20);
 
   if (Math.random() < 0.5) {
-    updateSceanrio("🧑 Victim found!");
+    updateScenario("🧑 Victim found!");
   } else {
     updateScenario("No victim found. Continue search.");
   }
@@ -215,8 +215,4 @@ function checkConditions() {
   if (state.fireIntensity >= 10) {
     updateScenario("🔥 Fire rapidly intensifying!");
   }
-}
-
-
-  updateScenario("Next phase coming soon...");
 }
