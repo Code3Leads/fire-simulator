@@ -13,6 +13,10 @@ function setChoices(options) {
 // 🔥 Start Game
 function startGame() {
   startTimer(20);
+
+  // Hide start button
+  document.getElementById("startBtn").style.display = "none";
+
   generateDispatch();
 }
 
