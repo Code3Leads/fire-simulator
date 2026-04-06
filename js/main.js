@@ -13,10 +13,7 @@ function setChoices(options) {
 // 🔥 Start Game
 function startGame() {
   startTimer(20);
-
-  // Hide start button
   document.getElementById("startBtn").style.display = "none";
-
   generateDispatch();
 }
 
@@ -54,20 +51,17 @@ function arriveOnScene() {
   updateScenario(`🚒 You arrive on scene. You see ${state.arrival}.`);
 
   if (state.arrival === "nothing showing") {
-
     state.fireLocation = Math.random() < 0.5 ? "basement" : "attic";
 
     setChoices([
       { text: "Perform 360", action: "perform360()" },
       { text: "Investigate Interior", action: "investigateInterior()" }
     ]);
-
   } else {
-
     setChoices([
       { text: "Nozzleman", action: "chooseRole('nozzle')" },
       { text: "Backup Firefighter", action: "chooseRole('backup')" },
-      { text: "Officer (Command)", action: "chooseRole('officer')}
+      { text: "Officer (Command)", action: "chooseRole('officer')" }
     ]);
   }
 }
@@ -95,7 +89,7 @@ function investigateInterior() {
   ]);
 }
 
-// Roles
+// 🔥 ROLE SYSTEM
 function chooseRole(role) {
   startTimer(20);
 
@@ -103,31 +97,34 @@ function chooseRole(role) {
 
   updateScenario(`You are assigned as ${role}.`);
 
-  if (state.role === "nozzle") {
+  if (role === "nozzle") {
     showNozzleOptions();
-  } else if(state.role === "backup") {
+  } else if (role === "backup") {
     showBackupOptions();
   } else {
     showOfficerOptions();
   }
 }
 
+// 🔥 NOZZLE OPTIONS
 function showNozzleOptions() {
   setChoices([
-    {text: "Advance Line", action: "advanceLine()" },
-    {text: "Flow Water", action: "flowWater()"},
-    {text: "Cool Overhead", action: "coolOverhead()"}
+    { text: "Advance Line", action: "advanceLine()" },
+    { text: "Flow Water", action: "flowWater()" },
+    { text: "Cool Overhead", action: "coolOverhead()" }
   ]);
 }
 
+// 🔥 BACKUP OPTIONS
 function showBackupOptions() {
   setChoices([
-    {text: "Force Door", action: "forceDoor()" },
-    {text: "Search", action: "search()" },
-    {text: "Assist Line", action: "assistLine()"}
+    { text: "Force Door", action: "forceDoor()" },
+    { text: "Search", action: "search()" },
+    { text: "Assist Line", action: "assistLine()" }
   ]);
 }
 
+// 🎖 OFFICER OPTIONS
 function showOfficerOptions() {
   setChoices([
     { text: "Establish Command", action: "establishCommand()" },
@@ -138,9 +135,10 @@ function showOfficerOptions() {
   ]);
 }
 
+// 🎖 OFFICER ACTIONS
 function establishCommand() {
   startTimer(20);
-  updateScenario("🎖️ command established. You are in command.");
+  updateScenario("🎖️ Command established. You are in command.");
   nextTurn();
 }
 
@@ -161,10 +159,11 @@ function callPAR() {
   startTimer(20);
 
   if (state.mayday) {
-    updateScenario(" 🚨PAR NOT COMPLETE - firefighter missing!");
+    updateScenario("🚨 PAR NOT COMPLETE — firefighter missing!");
   } else {
     updateScenario("✅ All members accounted for.");
   }
+
   nextTurn();
 }
 
@@ -174,9 +173,12 @@ function evacuate() {
   nextTurn();
 }
 
+// 🚨 MAYDAY SYSTEM
 function triggerMayday() {
   state.mayday = true;
-  updateScenario("🚨 MAYDAY MAYDAY MAYDAY🚨");
+
+  updateScenario("🚨 MAYDAY MAYDAY MAYDAY 🚨");
+
   triggerDangerMode();
 
   if (state.ritActive) {
@@ -188,10 +190,12 @@ function triggerMayday() {
   showLUNARPrompt();
 }
 
+// 🚒 RIT
 function deployRIT() {
   updateScenario("🚒 RIT entering structure for rescue!");
 }
 
+// 📻 LUNAR
 function showLUNARPrompt() {
   document.getElementById("choices").innerHTML = `
     <div style="margin-top:10px;">
@@ -203,32 +207,35 @@ function showLUNARPrompt() {
       <input placeholder="Resources"><br><br>
       <button onclick="submitLUNAR()">Transmit</button>
     </div>
-   `;
+  `;
 }
 
-function submitLUNAR () {
+function submitLUNAR() {
   updateScenario("📻 LUNAR transmitted. RIT responding.");
 }
 
+// 🔴 DANGER MODE
 function triggerDangerMode() {
-  startTimer(10); // faster timer 
+  startTimer(10);
+
   document.body.style.backgroundColor = "#7f1d1d";
 
   setTimeout(() => {
     document.body.style.backgroundColor = "#020617";
   }, 500);
 }
-  
+
+// 🔥 FIREFIGHTER ACTIONS
 function advanceLine() {
   startTimer(20);
 
-  if(state.fireIntensity > 6) {
+  if (state.fireIntensity > 6) {
     state.heatLevel += 2;
     updateScenario("Heavy fire pushing back. Advancement difficult.");
   } else {
     state.fireIntensity -= 2;
     state.waterOnFire = true;
-    updateScenario(" Good knockdown. Fire darkening.")
+    updateScenario("Good knockdown. Fire darkening.");
   }
 
   nextTurn();
@@ -258,7 +265,7 @@ function coolOverhead() {
 function forceDoor() {
   startTimer(20);
 
-  updateScenario ("Door forced. Entry gained.");
+  updateScenario("Door forced. Entry gained.");
 
   nextTurn();
 }
@@ -285,28 +292,31 @@ function assistLine() {
   nextTurn();
 }
 
+// 🔁 GAME LOOP
 function nextTurn() {
   state.timeElapsed++;
 
-  // Fire grows over time
   state.fireIntensity += 1;
   state.heatLevel += 1;
 
   checkConditions();
 
-  // Return correct role options
   if (state.role === "nozzle") {
     showNozzleOptions();
-  } else {
+  } else if (state.role === "backup") {
     showBackupOptions();
+  } else {
+    showOfficerOptions();
   }
 }
 
+// 🔥 CONDITIONS
 function checkConditions() {
   if (state.heatLevel >= 10 && !state.waterOnFire) {
     updateScenario("🔥 Flashover imminent!");
     triggerDangerMode();
   }
+
   if (state.fireIntensity >= 12 && !state.mayday) {
     updateScenario("🔥 Fire rapidly intensifying!");
     triggerMayday();
