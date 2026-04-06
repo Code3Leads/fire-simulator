@@ -1,5 +1,5 @@
 // =============================
-// 🔥 FIRE SIMULATOR ENGINE (POLISHED)
+// 🔥 FIRE SIMULATOR ENGINE (FINAL PHASE 3)
 // =============================
 
 // ---------- UI ----------
@@ -7,10 +7,16 @@ function updateScenario(text) {
   const el = document.getElementById("scenario");
 
   const entry = document.createElement("div");
-  entry.style.marginBottom = "8px";
+  entry.style.marginBottom = "6px";
+  entry.style.fontSize = "14px";
   entry.innerText = text;
 
   el.appendChild(entry);
+
+  // Limit messages (prevents overload)
+  if (el.children.length > 8) {
+    el.removeChild(el.firstChild);
+  }
 }
 
 function setChoices(options) {
@@ -21,7 +27,7 @@ function setChoices(options) {
   document.getElementById("choices").innerHTML = html;
 }
 
-// ---------- GAME START ----------
+// ---------- START ----------
 function startGame() {
   startTimer(20);
   document.getElementById("startBtn").style.display = "none";
@@ -112,7 +118,7 @@ function chooseRole(role) {
 
   state.role = role;
 
-  updateScenario(`👨‍🚒 Role Assigned: ${role.toUpperCase()}`);
+  updateScenario(`👨‍🚒 Role: ${role.toUpperCase()}`);
 
   nextTurn();
 }
@@ -166,10 +172,10 @@ function flowWater() {
   startTimer(20);
 
   state.waterOnFire = true;
-  state.fireIntensity -= 5;
-  state.heatLevel -= 2;
+  state.fireIntensity -= 6;
+  state.heatLevel -= 3;
 
-  updateScenario("💧 Strong water application — fire knocked back!");
+  updateScenario("💧 Strong knockdown — fire controlled!");
 
   nextTurn();
 }
@@ -243,7 +249,7 @@ function callPAR() {
   startTimer(20);
 
   if (state.mayday) {
-    updateScenario("🚨 PAR FAILED — missing firefighter!");
+    updateScenario("🚨 PAR FAILED — firefighter missing!");
   } else {
     updateScenario("📻 PAR complete.");
   }
@@ -258,7 +264,7 @@ function evacuate() {
 }
 
 // =============================
-// 🚨 MAYDAY
+// 🚨 MAYDAY SYSTEM
 // =============================
 function triggerMayday() {
   state.mayday = true;
@@ -267,15 +273,19 @@ function triggerMayday() {
 
   triggerDangerMode();
 
-  if (state.ritActive) {
-    updateScenario("🚒 RIT DEPLOYING!");
-  } else {
-    updateScenario("❌ NO RIT — RESCUE DELAYED!");
+  // Only officer deals with RIT
+  if (state.role === "officer") {
+    if (state.ritActive) {
+      updateScenario("🚒 RIT DEPLOYING!");
+    } else {
+      updateScenario("⚠️ Command: Assign RIT NOW!");
+    }
   }
 
   showLUNARPrompt();
 }
 
+// ---------- LUNAR ----------
 function showLUNARPrompt() {
   document.getElementById("choices").innerHTML = `
     <div>
@@ -292,6 +302,17 @@ function showLUNARPrompt() {
 
 function submitLUNAR() {
   updateScenario("📻 LUNAR transmitted.");
+
+  // Random outcome
+  if (Math.random() < 0.6) {
+    updateScenario("🚒 Firefighter rescued!");
+    state.gameOver = true;
+    endGame("WIN");
+  } else {
+    updateScenario("❌ Rescue failed.");
+    state.gameOver = true;
+    endGame("LOSS");
+  }
 }
 
 // ---------- DANGER ----------
@@ -309,27 +330,22 @@ function triggerDangerMode() {
 // 🔁 GAME LOOP
 // =============================
 function nextTurn() {
+  if (state.gameOver) return;
+
   state.timeElapsed++;
 
-  // reset water each turn
+  // Reset water
   state.waterOnFire = false;
 
-  // fire growth
+  // Fire growth
   state.fireIntensity += 2;
   state.heatLevel += 2;
 
-  if (!state.waterOnFire) {
-    state.fireIntensity += 1;
+  if (!state.waterOnFire && (state.role === "nozzle" || state.role === "backup")) {
     updateScenario("⚠️ Fire unchecked — conditions worsening.");
   }
 
-  // random escalation
-  if (Math.random() < 0.3) {
-    state.heatLevel += 1;
-    updateScenario("🔥 Sudden fire growth!");
-  }
-
-  updateScenario(`📊 Status → Fire: ${state.fireIntensity} | Heat: ${state.heatLevel}`);
+  updateScenario(`📊 Fire: ${state.fireIntensity} | Heat: ${state.heatLevel}`);
 
   checkConditions();
 
@@ -342,19 +358,55 @@ function nextTurn() {
   }
 }
 
-// ---------- CONDITIONS ----------
+// =============================
+// 🔥 CONDITIONS
+// =============================
 function checkConditions() {
 
-  if (state.heatLevel >= 8 && !state.waterOnFire) {
-    updateScenario("⚠️ Flashover imminent!");
-    triggerDangerMode();
+  // WIN
+  if (state.fireIntensity <= 0 && !state.gameOver) {
+    state.gameOver = true;
+
+    updateScenario("✅ FIRE KNOCKED!");
+    updateScenario("💧 Moving to overhaul.");
+
+    endGame("WIN");
+    return;
   }
 
-  if (state.heatLevel >= 12 && !state.mayday) {
+  // MAYDAY
+  if (state.heatLevel >= 10 && !state.mayday) {
     triggerMayday();
+    return;
   }
 
-  if (state.fireIntensity >= 10) {
-    updateScenario("🔥 Fire intensifying rapidly!");
+  // COLLAPSE = LOSS
+  if (state.heatLevel >= 15 && !state.gameOver) {
+    state.gameOver = true;
+
+    updateScenario("🔥 STRUCTURAL COLLAPSE!");
+    updateScenario("🚨 Evacuate immediately!");
+
+    endGame("LOSS");
+    return;
   }
+}
+
+// =============================
+// 🏁 END GAME
+// =============================
+function endGame(result) {
+  if (result === "WIN") {
+    updateScenario("🏁 SCENARIO COMPLETE — SUCCESS");
+  } else {
+    updateScenario("🏁 SCENARIO COMPLETE — LOSS");
+  }
+
+  document.getElementById("choices").innerHTML = `
+    <button onclick="restartGame()">Restart Scenario</button>
+  `;
+}
+
+function restartGame() {
+  location.reload();
 }
