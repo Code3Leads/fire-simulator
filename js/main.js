@@ -1,5 +1,5 @@
 // =============================
-// 🔥 FIRE SIMULATOR ENGINE
+// 🔥 FIRE SIMULATOR ENGINE (POLISHED)
 // =============================
 
 // ---------- UI ----------
@@ -10,7 +10,7 @@ function updateScenario(text) {
   entry.style.marginBottom = "8px";
   entry.innerText = text;
 
-  el.appendChild(entry); // clean top → bottom flow
+  el.appendChild(entry);
 }
 
 function setChoices(options) {
@@ -25,7 +25,6 @@ function setChoices(options) {
 function startGame() {
   startTimer(20);
   document.getElementById("startBtn").style.display = "none";
-
   document.getElementById("scenario").innerHTML = "";
 
   generateDispatch();
@@ -157,7 +156,7 @@ function advanceLine() {
   } else {
     state.fireIntensity -= 3;
     state.waterOnFire = true;
-    updateScenario("💧 Knockdown achieved.");
+    updateScenario("💧 Advancing line — progress made.");
   }
 
   nextTurn();
@@ -167,9 +166,10 @@ function flowWater() {
   startTimer(20);
 
   state.waterOnFire = true;
-  state.fireIntensity -= 4;
+  state.fireIntensity -= 5;
+  state.heatLevel -= 2;
 
-  updateScenario("💧 Water applied.");
+  updateScenario("💧 Strong water application — fire knocked back!");
 
   nextTurn();
 }
@@ -184,7 +184,7 @@ function coolOverhead() {
   nextTurn();
 }
 
-// ---------- BACKUP (FIXED 🔥)
+// ---------- BACKUP ----------
 function forceDoor() {
   startTimer(20);
 
@@ -270,7 +270,7 @@ function triggerMayday() {
   if (state.ritActive) {
     updateScenario("🚒 RIT DEPLOYING!");
   } else {
-    updateScenario("❌ NO RIT — DELAYED RESCUE!");
+    updateScenario("❌ NO RIT — RESCUE DELAYED!");
   }
 
   showLUNARPrompt();
@@ -311,14 +311,25 @@ function triggerDangerMode() {
 function nextTurn() {
   state.timeElapsed++;
 
+  // reset water each turn
+  state.waterOnFire = false;
+
+  // fire growth
   state.fireIntensity += 2;
   state.heatLevel += 2;
 
   if (!state.waterOnFire) {
     state.fireIntensity += 1;
+    updateScenario("⚠️ Fire unchecked — conditions worsening.");
   }
 
-  updateScenario(`🔥 Status: Fire=${state.fireIntensity} Heat=${state.heatLevel}`);
+  // random escalation
+  if (Math.random() < 0.3) {
+    state.heatLevel += 1;
+    updateScenario("🔥 Sudden fire growth!");
+  }
+
+  updateScenario(`📊 Status → Fire: ${state.fireIntensity} | Heat: ${state.heatLevel}`);
 
   checkConditions();
 
