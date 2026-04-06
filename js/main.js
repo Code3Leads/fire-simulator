@@ -66,8 +66,8 @@ function arriveOnScene() {
 
     setChoices([
       { text: "Nozzleman", action: "chooseRole('nozzle')" },
-      { text: "Backup Firefighter", action: "chooseRole('backup')" }
-      {text: "Officer (Command)", action: "chooseRole('officer')}
+      { text: "Backup Firefighter", action: "chooseRole('backup')" },
+      { text: "Officer (Command)", action: "chooseRole('officer')}
     ]);
   }
 }
@@ -103,9 +103,9 @@ function chooseRole(role) {
 
   updateScenario(`You are assigned as ${role}.`);
 
-  if (role === "nozzle") {
+  if (state.role === "nozzle") {
     showNozzleOptions();
-  } else if(role === "backup") {
+  } else if(state.role === "backup") {
     showBackupOptions();
   } else {
     showOfficerOptions();
@@ -130,10 +130,10 @@ function showBackupOptions() {
 
 function showOfficerOptions() {
   setChoices([
-    { text: "Establish Command", action: "establichCommand()" },
+    { text: "Establish Command", action: "establishCommand()" },
     { text: "Give Size-up", action: "giveSizeUp()" },
     { text: "Activate RIT", action: "activateRIT()" },
-    { text: "Call PAR", action: "callPAR()" }
+    { text: "Call PAR", action: "callPAR()" },
     { text: "Evacuate Structure", action: "evacuate()" }
   ]);
 }
@@ -185,7 +185,7 @@ function triggerMayday() {
     updateScenario("⚠️ No RIT team assigned! Rescue delayed!");
   }
 
-  showLunarPrompt();
+  showLUNARPrompt();
 }
 
 function deployRIT() {
@@ -193,17 +193,17 @@ function deployRIT() {
 }
 
 function showLUNARPrompt() {
-  document.getElementById("choices").innerHTML =
+  document.getElementById("choices").innerHTML = `
     <div style="margin-top:10px;">
       <h3>MAYDAY - LUNAR</h3>
       <input placeholder="Location"><br><br>
       <input placeholder="Unit"><br><br>
       <input placeholder="Name"><br><br>
       <input placeholder="Assignment"><br><br>
-      <imput placeholder="Resources"><br><br>
+      <input placeholder="Resources"><br><br>
       <button onclick="submitLUNAR()">Transmit</button>
     </div>
-   ;
+   `;
 }
 
 function submitLUNAR () {
