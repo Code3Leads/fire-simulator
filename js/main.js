@@ -5,7 +5,12 @@
 // ---------- UI ----------
 function updateScenario(text) {
   const el = document.getElementById("scenario");
-  el.innerText += "\n\n" + text;
+
+  const entry = document.createElement("div");
+  entry.style.marginBottom = "8px";
+  entry.innerText = text;
+
+  el.appendChild(entry); // clean top → bottom flow
 }
 
 function setChoices(options) {
@@ -21,8 +26,7 @@ function startGame() {
   startTimer(20);
   document.getElementById("startBtn").style.display = "none";
 
-  // Reset scenario text
-  document.getElementById("scenario").innerText = "";
+  document.getElementById("scenario").innerHTML = "";
 
   generateDispatch();
 }
@@ -38,7 +42,8 @@ function generateDispatch() {
 
   state.buildingType = buildings[Math.floor(Math.random() * buildings.length)];
 
-  updateScenario(`📻 Dispatch:\nEngine 10 respond for a structure fire at a ${state.buildingType}.`);
+  updateScenario(`📻 Dispatch: Engine 10 respond to a ${state.buildingType}.`);
+  updateScenario("📻 Reported: possible occupants trapped.");
 
   setChoices([
     { text: "Acknowledge Dispatch", action: "arriveOnScene()" }
@@ -58,7 +63,7 @@ function arriveOnScene() {
 
   state.arrival = arrivals[Math.floor(Math.random() * arrivals.length)];
 
-  updateScenario(`🚒 Arrival:\nYou arrive on scene. You see ${state.arrival}.`);
+  updateScenario(`🚒 Arrival: ${state.arrival}`);
 
   if (state.arrival === "nothing showing") {
     state.fireLocation = Math.random() < 0.5 ? "basement" : "attic";
@@ -80,7 +85,7 @@ function arriveOnScene() {
 function perform360() {
   startTimer(20);
 
-  updateScenario("🔍 360 complete. No visible fire outside.");
+  updateScenario("🔍 360 complete. No visible fire.");
 
   setChoices([
     { text: "Investigate Interior", action: "investigateInterior()" }
@@ -91,7 +96,7 @@ function perform360() {
 function investigateInterior() {
   startTimer(20);
 
-  updateScenario(`🔥 Fire located in the ${state.fireLocation}! Conditions worsening.`);
+  updateScenario(`🔥 Fire located in the ${state.fireLocation}!`);
 
   setChoices([
     { text: "Nozzleman", action: "chooseRole('nozzle')" },
@@ -108,9 +113,9 @@ function chooseRole(role) {
 
   state.role = role;
 
-  updateScenario(`👨‍🚒 Assigned Role: ${role.toUpperCase()}`);
+  updateScenario(`👨‍🚒 Role Assigned: ${role.toUpperCase()}`);
 
-  nextTurn(); // immediately start simulation loop
+  nextTurn();
 }
 
 // ---------- OPTIONS ----------
@@ -141,18 +146,18 @@ function showOfficerOptions() {
 }
 
 // =============================
-// 🔥 ACTIONS
+// 🔥 FIREFIGHTER ACTIONS
 // =============================
 function advanceLine() {
   startTimer(20);
 
   if (state.fireIntensity > 6) {
     state.heatLevel += 2;
-    updateScenario("🔥 Heavy fire pushing back. Advancement difficult.");
+    updateScenario("🔥 Heavy fire pushing back!");
   } else {
     state.fireIntensity -= 3;
     state.waterOnFire = true;
-    updateScenario("💧 Knockdown achieved. Fire darkening.");
+    updateScenario("💧 Knockdown achieved.");
   }
 
   nextTurn();
@@ -164,7 +169,7 @@ function flowWater() {
   state.waterOnFire = true;
   state.fireIntensity -= 4;
 
-  updateScenario("💧 Water applied. Conditions improving.");
+  updateScenario("💧 Water applied.");
 
   nextTurn();
 }
@@ -174,15 +179,18 @@ function coolOverhead() {
 
   state.heatLevel -= 3;
 
-  updateScenario("❄️ Cooling overhead. Heat reduced.");
+  updateScenario("❄️ Cooling overhead.");
 
   nextTurn();
 }
 
+// ---------- BACKUP (FIXED 🔥)
 function forceDoor() {
   startTimer(20);
 
-  updateScenario("🚪 Door forced. Entry gained.");
+  state.fireIntensity += 1;
+
+  updateScenario("🚪 Door forced — air feeding fire!");
 
   nextTurn();
 }
@@ -191,9 +199,9 @@ function search() {
   startTimer(20);
 
   if (Math.random() < 0.5) {
-    updateScenario("👤 Victim located!");
+    updateScenario("👤 Victim found!");
   } else {
-    updateScenario("🔍 No victim found.");
+    updateScenario("🔍 Search clear.");
   }
 
   nextTurn();
@@ -202,9 +210,9 @@ function search() {
 function assistLine() {
   startTimer(20);
 
-  state.fireIntensity -= 1;
+  state.fireIntensity -= 2;
 
-  updateScenario("🤝 Assisting nozzle. Fire attack improving.");
+  updateScenario("🤝 Assisting nozzle — fire improving.");
 
   nextTurn();
 }
@@ -227,7 +235,7 @@ function giveSizeUp() {
 function activateRIT() {
   startTimer(20);
   state.ritActive = true;
-  updateScenario("🚒 RIT team established.");
+  updateScenario("🚒 RIT established.");
   nextTurn();
 }
 
@@ -237,7 +245,7 @@ function callPAR() {
   if (state.mayday) {
     updateScenario("🚨 PAR FAILED — missing firefighter!");
   } else {
-    updateScenario("📻 PAR check complete.");
+    updateScenario("📻 PAR complete.");
   }
 
   nextTurn();
@@ -245,12 +253,12 @@ function callPAR() {
 
 function evacuate() {
   startTimer(20);
-  updateScenario("🚨 Emergency evacuation ordered!");
+  updateScenario("🚨 Evacuation ordered!");
   nextTurn();
 }
 
 // =============================
-// 🚨 MAYDAY SYSTEM
+// 🚨 MAYDAY
 // =============================
 function triggerMayday() {
   state.mayday = true;
@@ -260,15 +268,14 @@ function triggerMayday() {
   triggerDangerMode();
 
   if (state.ritActive) {
-    updateScenario("🚒 RIT deploying!");
+    updateScenario("🚒 RIT DEPLOYING!");
   } else {
-    updateScenario("⚠️ No RIT available!");
+    updateScenario("❌ NO RIT — DELAYED RESCUE!");
   }
 
   showLUNARPrompt();
 }
 
-// ---------- LUNAR ----------
 function showLUNARPrompt() {
   document.getElementById("choices").innerHTML = `
     <div>
@@ -284,7 +291,7 @@ function showLUNARPrompt() {
 }
 
 function submitLUNAR() {
-  updateScenario("📻 LUNAR transmitted. RIT responding.");
+  updateScenario("📻 LUNAR transmitted.");
 }
 
 // ---------- DANGER ----------
@@ -304,7 +311,6 @@ function triggerDangerMode() {
 function nextTurn() {
   state.timeElapsed++;
 
-  // Fire escalates FAST
   state.fireIntensity += 2;
   state.heatLevel += 2;
 
@@ -312,9 +318,10 @@ function nextTurn() {
     state.fireIntensity += 1;
   }
 
+  updateScenario(`🔥 Status: Fire=${state.fireIntensity} Heat=${state.heatLevel}`);
+
   checkConditions();
 
-  // Show correct role buttons
   if (state.role === "nozzle") {
     showNozzleOptions();
   } else if (state.role === "backup") {
@@ -328,7 +335,7 @@ function nextTurn() {
 function checkConditions() {
 
   if (state.heatLevel >= 8 && !state.waterOnFire) {
-    updateScenario("🔥 Flashover imminent!");
+    updateScenario("⚠️ Flashover imminent!");
     triggerDangerMode();
   }
 
@@ -337,6 +344,6 @@ function checkConditions() {
   }
 
   if (state.fireIntensity >= 10) {
-    updateScenario("🔥 Fire rapidly intensifying!");
+    updateScenario("🔥 Fire intensifying rapidly!");
   }
 }
